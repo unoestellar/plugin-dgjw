@@ -74,6 +74,14 @@ sf plugins
 sf dgjw manifest generate --help
 ```
 
+### Update
+
+```bash
+sf plugins install plugin-dgjw
+```
+
+동일 명령으로 최신 버전이 자동 설치됩니다. 현재 버전 확인은 `sf plugins`로 할 수 있습니다.
+
 ---
 
 ## Usage
@@ -143,7 +151,7 @@ DESCRIPTION
   Generate a full metadata manifest from a Salesforce org with analysis report.
 
   Queries all metadata types from the target org, generates a complete package.xml manifest, analyzes component counts
-  per type, and produces a markdown summary report. Each <types> block in the manifest receives a comment showing its
+  per type, and produces a markdown summary report. Each `<types>` block in the manifest receives a comment showing its
   member count and range.
 
 EXAMPLES
@@ -161,7 +169,7 @@ FLAG DESCRIPTIONS
     Override the api version used for api requests made by this command
 ```
 
-_See code: [src/commands/dgjw/manifest/generate.ts](https://github.com/unoestellar/plugin-dgjw/blob/v1.0.0/src/commands/dgjw/manifest/generate.ts)_
+_See code: [src/commands/dgjw/manifest/generate.ts](https://github.com/unoestellar/plugin-dgjw/blob/v1.1.0/src/commands/dgjw/manifest/generate.ts)_
 <!-- commandsstop -->
 
 ---
