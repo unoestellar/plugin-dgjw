@@ -1,5 +1,20 @@
 import { type TypeSummary } from './manifestParser.js';
 
+/**
+ * 핵심 개발 메타데이터 타입 (Default 섹션에 표시)
+ */
+const DEFAULT_TYPES = new Set([
+  'ApexClass',
+  'ApexComponent',
+  'ApexPage',
+  'ApexTestSuite',
+  'ApexTrigger',
+  'FlowDefinition',
+  'AuraDefinitionBundle',
+  'LightningComponentBundle',
+  'StaticResource',
+]);
+
 export type ReportOptions = {
   orgAlias: string;
   fileName: string;
@@ -10,8 +25,9 @@ export type ReportOptions = {
 
 /**
  * 매니페스트 분석 결과를 Markdown 테이블 형식으로 생성합니다.
- * - memberCount 오름차순 정렬
- * - Include 컬럼에 [x] 체크박스 추가 (사용자가 편집 가능)
+ * - Default 타입 / Others 타입 두 테이블로 분리
+ * - 각 테이블 memberCount 내림차순 정렬
+ * - Include 컬럼에 [x] 체크박스 추가
  */
 export function generateMarkdownReport(options: ReportOptions): string {
   const { orgAlias, fileName, types, totalTypes, totalMembers } = options;
@@ -19,11 +35,17 @@ export function generateMarkdownReport(options: ReportOptions): string {
   const now = new Date();
   const timestamp = now.toISOString().replace('T', ' ').slice(0, 19);
 
-  // memberCount 오름차순 정렬
-  const sorted = [...types].sort((a, b) => a.memberCount - b.memberCount);
+  // Default / Others 분리
+  const defaultTypes = types.filter((t) => DEFAULT_TYPES.has(t.name));
+  const otherTypes = types.filter((t) => !DEFAULT_TYPES.has(t.name));
+
+  // 각각 내림차순 정렬
+  const defaultSorted = [...defaultTypes].sort((a, b) => b.memberCount - a.memberCount);
+  const othersSorted = [...otherTypes].sort((a, b) => b.memberCount - a.memberCount);
 
   const lines: string[] = [];
 
+  // --- Header ---
   lines.push('# Manifest Analysis Report');
   lines.push('');
   lines.push(`- **Org**: ${orgAlias}`);
@@ -32,19 +54,50 @@ export function generateMarkdownReport(options: ReportOptions): string {
   lines.push(`- **Total Types**: ${totalTypes}`);
   lines.push(`- **Total Members**: ${totalMembers.toLocaleString()}`);
   lines.push('');
-  lines.push('## Component Summary');
-  lines.push('');
-  lines.push('> Edit the Include column: `[x]` to include, `[ ]` to exclude.');
+  lines.push('> Edit the Include column: `[x]` to include, `[ ]` or `[]` to exclude.');
   lines.push('> Then re-run `sf dgjw manifest generate --from-org <org>` to regenerate with selected types only.');
   lines.push('');
-  lines.push('| Include | # | Metadata Type | Members Count |');
-  lines.push('|---------|--:|---------------|-------------:|');
 
-  sorted.forEach((t, index) => {
-    lines.push(`| [x] | ${index + 1} | ${t.name} | ${t.memberCount.toLocaleString()} |`);
-  });
+  // --- Default Types ---
+  lines.push('## Default Components');
+  lines.push('');
 
-  lines.push(`| | | **Total: ${totalTypes} types** | **${totalMembers.toLocaleString()}** |`);
+  if (defaultSorted.length > 0) {
+    const defaultMembers = defaultSorted.reduce((sum, t) => sum + t.memberCount, 0);
+
+    lines.push('| Include | # | Metadata Type | Members Count |');
+    lines.push('|---------|--:|---------------|-------------:|');
+
+    defaultSorted.forEach((t, index) => {
+      lines.push(`| [x] | ${index + 1} | ${t.name} | ${t.memberCount.toLocaleString()} |`);
+    });
+
+    lines.push(`| | | **Subtotal: ${defaultSorted.length} types** | **${defaultMembers.toLocaleString()}** |`);
+  } else {
+    lines.push('*No default component types found.*');
+  }
+
+  lines.push('');
+
+  // --- Other Types ---
+  lines.push('## Other Components');
+  lines.push('');
+
+  if (othersSorted.length > 0) {
+    const othersMembers = othersSorted.reduce((sum, t) => sum + t.memberCount, 0);
+
+    lines.push('| Include | # | Metadata Type | Members Count |');
+    lines.push('|---------|--:|---------------|-------------:|');
+
+    othersSorted.forEach((t, index) => {
+      lines.push(`| [x] | ${index + 1} | ${t.name} | ${t.memberCount.toLocaleString()} |`);
+    });
+
+    lines.push(`| | | **Subtotal: ${othersSorted.length} types** | **${othersMembers.toLocaleString()}** |`);
+  } else {
+    lines.push('*No other component types found.*');
+  }
+
   lines.push('');
   lines.push('---');
   lines.push('');
