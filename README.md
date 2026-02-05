@@ -169,7 +169,7 @@ FLAG DESCRIPTIONS
     Override the api version used for api requests made by this command
 ```
 
-_See code: [src/commands/dgjw/manifest/generate.ts](https://github.com/unoestellar/plugin-dgjw/blob/v1.1.0/src/commands/dgjw/manifest/generate.ts)_
+_See code: [src/commands/dgjw/manifest/generate.ts](https://github.com/unoestellar/plugin-dgjw/blob/v1.1.1/src/commands/dgjw/manifest/generate.ts)_
 <!-- commandsstop -->
 
 ---
