@@ -10,12 +10,17 @@ export type ReportOptions = {
 
 /**
  * 매니페스트 분석 결과를 Markdown 테이블 형식으로 생성합니다.
+ * - memberCount 오름차순 정렬
+ * - Include 컬럼에 [x] 체크박스 추가 (사용자가 편집 가능)
  */
 export function generateMarkdownReport(options: ReportOptions): string {
   const { orgAlias, fileName, types, totalTypes, totalMembers } = options;
 
   const now = new Date();
   const timestamp = now.toISOString().replace('T', ' ').slice(0, 19);
+
+  // memberCount 오름차순 정렬
+  const sorted = [...types].sort((a, b) => a.memberCount - b.memberCount);
 
   const lines: string[] = [];
 
@@ -29,14 +34,17 @@ export function generateMarkdownReport(options: ReportOptions): string {
   lines.push('');
   lines.push('## Component Summary');
   lines.push('');
-  lines.push('| # | Metadata Type | Members Count |');
-  lines.push('|--:|---------------|-------------:|');
+  lines.push('> Edit the Include column: `[x]` to include, `[ ]` to exclude.');
+  lines.push('> Then re-run `sf dgjw manifest generate --from-org <org>` to regenerate with selected types only.');
+  lines.push('');
+  lines.push('| Include | # | Metadata Type | Members Count |');
+  lines.push('|---------|--:|---------------|-------------:|');
 
-  types.forEach((t, index) => {
-    lines.push(`| ${index + 1} | ${t.name} | ${t.memberCount.toLocaleString()} |`);
+  sorted.forEach((t, index) => {
+    lines.push(`| [x] | ${index + 1} | ${t.name} | ${t.memberCount.toLocaleString()} |`);
   });
 
-  lines.push(`| | **Total: ${totalTypes} types** | **${totalMembers.toLocaleString()}** |`);
+  lines.push(`| | | **Total: ${totalTypes} types** | **${totalMembers.toLocaleString()}** |`);
   lines.push('');
   lines.push('---');
   lines.push('');

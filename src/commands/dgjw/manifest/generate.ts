@@ -6,6 +6,8 @@ import { ComponentSet } from '@salesforce/source-deploy-retrieve';
 import { parseManifestXml, type TypeSummary } from '../../../utils/manifestParser.js';
 import { generateMarkdownReport } from '../../../utils/reportGenerator.js';
 import { injectXmlComments } from '../../../utils/xmlCommentInjector.js';
+import { findLatestReport, parseReportChecks } from '../../../utils/reportReader.js';
+import { filterManifestXml } from '../../../utils/manifestFilter.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('plugin-dgjw', 'dgjw.manifest.generate');
@@ -15,6 +17,7 @@ export type ManifestGenerateResult = {
   reportPath: string;
   totalTypes: number;
   totalMembers: number;
+  filtered: boolean;
   types: TypeSummary[];
 };
 
@@ -57,18 +60,40 @@ export class ManifestGenerate extends SfCommand<ManifestGenerateResult> {
       mkdirSync(outputDir, { recursive: true });
     }
 
-    // Step 2: Org에서 Full Manifest 생성
+    // Step 2: 기존 리포트에서 체크된 타입 확인
+    let checkedTypeNames: string[] | null = null;
+    const latestReport = findLatestReport(outputDir);
+
+    if (latestReport) {
+      const checks = parseReportChecks(latestReport);
+      const checkedOnly = checks.filter((c) => c.checked);
+      const uncheckedExists = checks.some((c) => !c.checked);
+
+      if (uncheckedExists && checkedOnly.length > 0) {
+        checkedTypeNames = checkedOnly.map((c) => c.name);
+        this.log(`Previous report found: ${latestReport}`);
+        this.log(`Filtering to ${checkedOnly.length} checked types (${checks.length - checkedOnly.length} excluded).`);
+      }
+    }
+
+    // Step 3: Org에서 Full Manifest 생성
     this.spinner.start(messages.getMessage('info.generating', [org.getUsername() ?? 'unknown']));
 
     const componentSet = await ComponentSet.fromConnection({
       usernameOrConnection: connection,
     });
 
-    const rawXml = await componentSet.getPackageXml(4);
+    let rawXml = await componentSet.getPackageXml(4);
 
     this.spinner.stop();
 
-    // Step 3: XML 파싱 및 분석
+    // Step 4: 체크된 타입만 필터링 (기존 리포트가 있고 일부 타입이 해제된 경우)
+    const filtered = checkedTypeNames !== null;
+    if (checkedTypeNames) {
+      rawXml = filterManifestXml(rawXml, checkedTypeNames);
+    }
+
+    // Step 5: XML 파싱 및 분석
     this.spinner.start(messages.getMessage('info.analyzing'));
 
     const typeSummaries = parseManifestXml(rawXml);
@@ -82,15 +107,15 @@ export class ManifestGenerate extends SfCommand<ManifestGenerateResult> {
 
     this.spinner.stop();
 
-    // Step 4: XML에 주석 삽입
+    // Step 6: XML에 주석 삽입
     const annotatedXml = injectXmlComments(rawXml, typeSummaries);
 
-    // Step 5: 매니페스트 파일 쓰기
+    // Step 7: 매니페스트 파일 쓰기
     const manifestPath = join(outputDir, fileName);
     writeFileSync(manifestPath, annotatedXml, 'utf-8');
     this.log(`Manifest written: ${manifestPath}`);
 
-    // Step 6: Markdown 리포트 생성 (YYYYMMDD-HHmm 타임스탬프 접두사)
+    // Step 8: Markdown 리포트 생성 (YYYYMMDD-HHmm 타임스탬프 접두사)
     const now = new Date();
     const pad = (n: number): string => String(n).padStart(2, '0');
     const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
@@ -109,8 +134,11 @@ export class ManifestGenerate extends SfCommand<ManifestGenerateResult> {
     writeFileSync(reportPath, reportContent, 'utf-8');
     this.log(messages.getMessage('info.writing-report', [reportPath]));
 
-    // Step 7: 요약 출력
+    // Step 9: 요약 출력
     this.log('');
+    if (filtered) {
+      this.log(`Filtered manifest: ${totalTypes} types selected.`);
+    }
     this.log(messages.getMessage('info.types-found', [totalTypes, totalMembers]));
     this.log(messages.getMessage('info.complete'));
 
@@ -119,6 +147,7 @@ export class ManifestGenerate extends SfCommand<ManifestGenerateResult> {
       reportPath,
       totalTypes,
       totalMembers,
+      filtered,
       types: typeSummaries,
     };
   }
