@@ -1,0 +1,73 @@
+{
+  "name": "plugin-dgjw",
+  "version": "1.0.0",
+  "description": "Da Ga Jeo Wa - Salesforce manifest analyzer plugin. Generates full metadata manifest from an org, analyzes component counts, and produces markdown reports.",
+  "license": "MIT",
+  "author": "ihkim920",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unoestellar/plugin-dgjw.git"
+  },
+  "files": [
+    "/lib",
+    "/messages",
+    "/oclif.manifest.json"
+  ],
+  "dependencies": {
+    "@oclif/core": "^4",
+    "@salesforce/core": "^8",
+    "@salesforce/sf-plugins-core": "^12",
+    "@salesforce/source-deploy-retrieve": "^12",
+    "fast-xml-parser": "^4"
+  },
+  "devDependencies": {
+    "@types/chai": "^4",
+    "@types/mocha": "^10",
+    "@types/node": "^22",
+    "chai": "^5",
+    "mocha": "^10",
+    "oclif": "^4",
+    "ts-node": "^10",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "salesforce",
+    "sf-plugin",
+    "sf",
+    "manifest",
+    "package.xml",
+    "metadata",
+    "analyzer",
+    "dgjw"
+  ],
+  "oclif": {
+    "commands": "./lib/commands",
+    "bin": "sf",
+    "topicSeparator": " ",
+    "topics": {
+      "dgjw": {
+        "description": "Da Ga Jeo Wa - Salesforce org manifest analyzer."
+      },
+      "dgjw manifest": {
+        "description": "Generate and analyze Salesforce metadata manifests."
+      }
+    },
+    "flexibleTaxonomy": true
+  },
+  "scripts": {
+    "build": "tsc -p . --pretty",
+    "clean": "rm -rf lib",
+    "compile": "tsc -p . --pretty",
+    "lint": "tsc --noEmit",
+    "prepack": "npm run build && oclif manifest && oclif readme",
+    "postpack": "rm -f oclif.manifest.json",
+    "test": "mocha \"test/**/*.test.ts\" --timeout 10000",
+    "test:only": "mocha \"test/**/*.test.ts\" --timeout 10000"
+  }
+}
