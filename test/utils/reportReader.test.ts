@@ -59,6 +59,24 @@ describe('reportReader', () => {
       expect(result[2]).to.deep.equal({ name: 'ApexTrigger', checked: true });
     });
 
+    it('should treat [] (empty brackets) as unchecked', () => {
+      const content = [
+        '| Include | # | Metadata Type | Members Count |',
+        '|---------|--:|---------------|-------------:|',
+        '| [x] | 1 | ApexClass | 10 |',
+        '| [] | 2 | CustomObject | 5 |',
+      ].join('\n');
+
+      const filePath = join(testDir, 'empty_bracket_report.md');
+      writeFileSync(filePath, content);
+
+      const result = parseReportChecks(filePath);
+
+      expect(result).to.have.lengthOf(2);
+      expect(result[0]).to.deep.equal({ name: 'ApexClass', checked: true });
+      expect(result[1]).to.deep.equal({ name: 'CustomObject', checked: false });
+    });
+
     it('should return empty array for report with no table rows', () => {
       const filePath = join(testDir, 'empty_report.md');
       writeFileSync(filePath, '# Empty Report\n');

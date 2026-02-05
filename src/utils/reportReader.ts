@@ -36,7 +36,7 @@ export function parseReportChecks(reportPath: string): CheckedType[] {
   const result: CheckedType[] = [];
 
   for (const line of lines) {
-    const match = line.match(/\|\s*\[([ xX])\]\s*\|\s*\d+\s*\|\s*(\S+)\s*\|/);
+    const match = line.match(/\|\s*\[([ xX]?)\]\s*\|\s*\d+\s*\|\s*(\S+)\s*\|/);
     if (match) {
       result.push({
         name: match[2],
